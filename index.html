@@ -2,30 +2,30 @@
 <html manifest="./PSFree.manifest">
   <head>
     <script>
-        function DLProgress(e){Percent=(Math.round(e.loaded / e.total * 100));document.title="Đang cài cache offline: " + Percent + "%";}
-        function DisplayCacheProgress(){setTimeout(function(){;document.title="Cache thành công !";},1000);setTimeout(function(){window.location.href = document.referrer;},3000);}window.applicationCache.addEventListener("progress",DLProgress,false);window.applicationCache.oncached=function(e){DisplayCacheProgress();};window.applicationCache.onupdateready=function(e){DisplayCacheProgress();};
+        function DLProgress(e){Percent=(Math.round(e.loaded / e.total * 100));document.title="Installing offline cache: " + Percent + "%";}
+        function DisplayCacheProgress(){setTimeout(function(){;document.title="Cache Success !";},1000);setTimeout(function(){window.location.href = document.referrer;},3000);}window.applicationCache.addEventListener("progress",DLProgress,false);window.applicationCache.oncached=function(e){DisplayCacheProgress();};window.applicationCache.onupdateready=function(e){DisplayCacheProgress();};
     </script>
     <meta charset="UTF-8">
-    <title>PSFree</title>
+    <title>KÍCH HACK</title>
     <link rel='stylesheet' href='./css/index.css'>
   </head>
   <body>
     <!-- Floating Menu -->
     <div class="floating-menu">
-      <button onclick="showpayloads()" class="menu-btn" id="payloadsbtn">Payload</button>
-      <button class="menu-btn" id="generate-cache-btn">Ép Cache</button>
-      <button class="menu-btn" id="update-exploit">Cập nhật Exploit</button>
-      <button onclick="showsettings()" class="menu-btn" id="settings-btn">Cài đặt</button>
-      <button onclick="showabout()" class="menu-btn" id="about-btn">Giới thiệu</button>
+      <button onclick="showpayloads()" class="menu-btn" id="payloadsbtn">Các Lệnh Khác</button>
+      <button class="menu-btn" id="generate-cache-btn">Ép Tạo Bộ Nhớ Đệm</button>
+      <button class="menu-btn" id="update-exploit">Cập Nhật Khai Thác</button>
+      <button onclick="showsettings()" class="menu-btn" id="settings-btn">Cài Đặt</button>
+      <button onclick="showabout()" class="menu-btn" id="about-btn">Giới Thiệu</button>
     </div>
 
     <div class="header">
-      <div class="header-title" id="header-title">PSFree</div>
+      <div class="header-title" id="header-title">KÍCH HACK</div>
     </div>
 
     <pre id="update-results" style="white-space: pre-wrap; margin-top: 10px;"></pre>
 
-    <h2 id="PS4FW">PS4 FW: 0.00 | Tương thích</h2>
+    <h2 id="PS4FW">PS4 FW: 0.00 | Tương Thích</h2>
 
     <div id="jailbreak-page">
       <div class="center-btn-wrap">
@@ -42,56 +42,56 @@
     <div id="payloads-page" style="display: none;">
       <nav class="floating-menu-payloads">
         <button id="toolb" onclick="showtoolspayloads()">Công cụ</button>
-        <button id="gameb" onclick="showgamepayloads()">Game</button>
+        <button id="gameb" onclick="showgamepayloads()">Trò chơi</button>
         <button style="display: none;" id="linuxb" onclick="showlinuxpayloads()">Linux</button>
       </nav>
       <div id="payloads-tools" style="display: block;">
         <h2 id="tools">Công cụ</h2>
           <div class="button-container" id="button-container">
-            <button id="binloader">Bin Loader</button>
-            <button data-func="load_AppDumper">App Dumper</button>
-            <button data-func="load_KernelDumper">Kernel Dumper</button>
-            <button data-func="load_VTXDumper">PS4 Dumper VTX</button>
-            <button data-func="load_App2USB">App2USB</button>
+            <button id="binloader">Trình nạp BIN</button>
+            <button data-func="load_AppDumper">Trích xuất ứng dụng</button>
+            <button data-func="load_KernelDumper">Trích xuất nhân hệ thống</button>
+            <button data-func="load_VTXDumper">Trích xuất PS4 VTX</button>
+            <button data-func="load_App2USB">Ứng dụng sang USB</button>
             <button data-func="load_DisableUpdates">Tắt cập nhật</button>
             <button data-func="load_EnableUpdates">Bật cập nhật</button>
             <button data-func="load_FTP">FTP</button>
             <button data-func="load_HistoryBlocker">Chặn lịch sử</button>
-            <button data-func="load_KernelClock">Kernel Clock</button>
-            <!--<button data-func="load_Orbis">Orbis Toolbox</button>-->
-            <button data-func="load_PS4Debug">PS4 Debug</button>
-            <button data-func="load_ToDex">Chuyển DEX</button>
-            <button data-func="load_ToDev">Chuyển DEV</button>
-            <button data-func="load_ToKratos">Chuyển Kratos</button>
-            <button data-func="load_ToCex">Chuyển CEX</button>
-            <button data-func="load_BackupDB">Sao lưu DB</button>
-            <button data-func="load_RestoreDB">Khôi phục DB</button>
+            <button data-func="load_KernelClock">Đồng hồ nhân hệ thống</button>
+            <!--<button data-func="load_Orbis">Orbis-Toolbox</button>-->
+            <button data-func="load_PS4Debug">Gỡ lỗi PS4</button>
+            <button data-func="load_ToDex">Chuyển sang DEX</button>
+            <button data-func="load_ToDev">Chuyển sang DEV</button>
+            <button data-func="load_ToKratos">Chuyển sang KRATOS</button>
+            <button data-func="load_ToCex">Chuyển sang CEX</button>
+            <button data-func="load_BackupDB">Sao lưu cơ sở dữ liệu</button>
+            <button data-func="load_RestoreDB">Khôi phục cơ sở dữ liệu</button>
             <button data-func="load_RIFRenamer">Đổi tên RIF</button>
-            <button data-func="load_ExitIDU">Thoát IDU</button>
+            <button data-func="load_ExitIDU">Thoát chế độ IDU</button>
             <button data-func="load_DisableASLR">Tắt ASLR</button>
-            <button data-func="load_ModuleDumper">Dump Module</button>
+            <button data-func="load_ModuleDumper">Trích xuất mô-đun</button>
             <!--<button data-func="load_WebrRTE">WebRTE</button>-->
             <button data-func="load_PermanentUART">UART vĩnh viễn</button>
             <button data-func="load_PUPDecrypt">Giải mã PUP</button>
           </div>
       </div>
       <div id="payloads-game" style="display: none;">
-        <h2 id="tools">Game</h2>
+        <h2 id="tools">Trò chơi</h2>
           <div class="button-container" id="button-container">
-            <button data-func="load_GTAArbic">GTAV ArabicGuy 1.27</button>
-            <button data-func="load_GTAArbic3">GTAV ArabicGuy 1.32</button>
-            <button data-func="load_GTAArbic33">GTAV ArabicGuy 1.33</button>
-            <button data-func="load_GTABQ133">GTAV BeefQueefMod 1.33</button>
-            <button data-func="load_GTABQ134">GTAV BeefQueefMod 1.34</button>
-            <button data-func="load_GTABQ138">GTAV BeefQueefMod 1.38</button>
-            <button data-func="load_GTAWM132">GTAV WildeModz 1.32</button>
-            <button data-func="load_GTAWM133">GTAV WildeModz 1.33</button>
-            <button data-func="load_GTAWM138">GTAV WildeModz 1.38</button>
-            <button data-func="load_Oysters100">RDR2 OystersMenu 1.00</button>
-            <button data-func="load_Oysters113">RDR2 OystersMenu 1.13</button>
-            <button data-func="load_Oysters119">RDR2 OystersMenu 1.19</button>
-            <button data-func="load_Oysters124">RDR2 OystersMenu 1.24</button>
-            <button data-func="load_Oysters124">RDR2 OystersMenu 1.29</button>
+            <button data-func="load_GTAArbic">GTAV-ArabicGuy-1.27</button>
+            <button data-func="load_GTAArbic3">GTAV-ArabicGuy-1.32</button>
+            <button data-func="load_GTAArbic33">GTAV-ArabicGuy-1.33</button>
+            <button data-func="load_GTABQ133">GTAV-BeefQueefMod-1.33</button>
+            <button data-func="load_GTABQ134">GTAV-BeefQueefMod-1.34</button>
+            <button data-func="load_GTABQ138">GTAV-BeefQueefMod-1.38</button>
+            <button data-func="load_GTAWM132">GTAV-WildeModz-1.32</button>
+            <button data-func="load_GTAWM133">GTAV-WildeModz-1.33</button>
+            <button data-func="load_GTAWM138">GTAV-WildeModz-1.38</button>
+            <button data-func="load_Oysters100">RDR2-OystersMenu-1.00</button>
+            <button data-func="load_Oysters113">RDR2-OystersMenu-1.13</button>
+            <button data-func="load_Oysters119">RDR2-OystersMenu-1.19</button>
+            <button data-func="load_Oysters124">RDR2-OystersMenu-1.24</button>
+            <button data-func="load_Oysters124">RDR2-OystersMenu-1.29</button>
           </div>
       </div>
       <div id="payloads-linux" style="display: none;">
@@ -102,17 +102,17 @@
             <button data-func="load_Linux2gb">VRAM 2GB</button>
             <button data-func="load_Linux3gb">VRAM 3GB</button>
             <button data-func="load_Linux4gb">VRAM 4GB</button>
-            <h2 style="text-align: center;">PS4 PRO</h2>
+            <h2 style="text-align: center;">PS4-PRO</h2>
             <button data-func="load_Linux_PRO">VRAM 1GB</button>
             <button data-func="load_Linux2gb_PRO">VRAM 2GB</button>
             <button data-func="load_Linux3gb_PRO">VRAM 3GB</button>
             <button data-func="load_Linux4gb_PRO">VRAM 4GB</button>
-            <h2 style="text-align: center;">PS4 Baikal</h2>
+            <h2 style="text-align: center;">PS4-Baikal</h2>
             <button data-func="load_Linux_Baikal">VRAM 1GB</button>
             <button data-func="load_Linux2gb_Baikal">VRAM 2GB</button>
             <button data-func="load_Linux3gb_Baikal">VRAM 3GB</button>
             <button data-func="load_Linux4gb_Baikal">VRAM 4GB</button>
-            <h2 style="text-align: center;">PS4 Baikal PRO</h2>
+            <h2 style="text-align: center;">PS4-Baikal-PRO</h2>
             <button data-func="load_Linux_PRO_Baikal">VRAM 1GB</button>
             <button data-func="load_Linux2gb_PRO_Baikal">VRAM 2GB</button>
             <button data-func="load_Linux3gb_PRO_Baikal">VRAM 3GB</button>
@@ -122,17 +122,19 @@
     </div>
     
     <div id="DebugConsole">
-      <h3>Bảng điều khiển Debug</h3>
+      <h3>Bảng điều khiển gỡ lỗi</h3>
+    
       <div class="console" style="padding: 20px;"><pre id='console'></pre></div>
     </div>
     
+
     <!-- About Popup -->
     <div class="overlay" id="overlay-popup"></div>
     <div class="popup" id="about-popup">
       <h2>Giới thiệu PSFree</h2>
       <div>
         <p>Phiên bản: 1.5.1</p>
-        <p>Giao diện web đơn giản để jailbreak PS4.</p>
+        <p>Giao diện web đơn giản cho jailbreak PS4.</p>
       </div>
       <div class="credits">
         <h3>Ghi công</h3>
@@ -153,22 +155,36 @@
     <!-- Settings Popup -->
     <div class="overlay" id="overlay-popup"></div>
     <div class="popup" id="settings-popup">
-      <h2>Cài đặt PSFree</h2>
+      <h2>Cài Đặt Kích Hack</h2>
       <div class="main-container">
         <div class="listfw-container">
           <div class="settings-container">
-            <h3>Firmware PS4 được hỗ trợ</h3>
+            <h3>Các Phiên Bản Firmware PS4 Được Hỗ Trợ</h3>
             <div id="listfw">
-              <p>7.00</p><p>7.01</p><p>7.02</p><p>7.50</p><p>7.51</p><p>7.55</p>
-              <p>8.00</p><p>8.01</p><p>8.03</p><p>8.50</p><p>8.52</p>
-              <p>9.00</p><p>9.03</p><p>9.04</p><p>9.50</p><p>9.51</p><p>9.60</p>
+              <p>7.00</p>
+              <p>7.01</p>
+              <p>7.02</p>
+              <p>7.50</p>
+              <p>7.51</p>
+              <p>7.55</p>
+              <p>8.00</p>
+              <p>8.01</p>
+              <p>8.03</p>
+              <p>8.50</p>
+              <p>8.52</p>
+              <p>9.00</p>
+              <p>9.03</p>
+              <p>9.04</p>
+              <p>9.50</p>
+              <p>9.51</p>
+              <p>9.60</p>
             </div>
           </div>
         </div>
         
         <div class="choosejb-container">
           <div class="settings-container">
-            <h3>Chọn chế độ</h3>
+            <h3>Chọn phiên bản bạn muốn</h3>
             <div class="radio-group">
               <label>
                 <input type="radio" name="hen" value="GoldHEN" onchange="savejbflavor(); choosejb('GoldHEN')"> GoldHEN
@@ -183,14 +199,14 @@
               </label>
               <label>
                 <input type="checkbox" id="ckbdc" checked />
-                <span>Bật Debug Console</span>
+                <span>Bật bảng điều khiển gỡ lỗi</span>
               </label>
           </div>
         </div>
       </div>
       
       <div class="button-container">
-        <button data-func="load_PSFreeFix" class="install-psfrf" id="install-psfrf" style="display: none;">Cài PSFree Fix</button>
+        <button data-func="load_PSFreeFix" class="install-psfrf" id="install-psfrf" style="display: none;">Cài Đặt Bản Vá PSFree</button>
       </div>
       <button onclick="closesettings()" class="close-btn" id="close-settings"></button>
     </div>
