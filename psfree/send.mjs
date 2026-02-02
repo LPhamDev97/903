@@ -91,7 +91,7 @@ function dump(name, lib_base, lib_end) {
   log(`${name} base: ${lib_base}`);
   log(`${name} size: ${lib_size}`);
   const lib = make_buffer(lib_base, lib_size);
-  send(url, lib, `${name}.sprx.text_${lib_base}.bin`, () => log(`${name} đã được gửi`));
+  send(url, lib, `${name}.sprx.text_${lib_base}.bin`, () => log(`${name} sent`));
 }
 
 // dump for libSceNKWebKit.sprx
